@@ -1,0 +1,38 @@
+# @verevoir/recipes
+
+Recipe-descriptor format + zero-dependency parser. A recipe is a flat-frontmatter
+`.md`: a parameterised procedure (typed inputs → instructions → result) a host
+compiles to a chat-time tool, an MCP prompt, or runs inline. Plumbing only — the
+recipe content lives in a project's corpus (e.g. a guardrails repo) and is loaded
+at runtime; a different corpus is a different recipe set with no code change.
+
+## Format
+
+`.md` with flat frontmatter (no YAML dep) + an instruction body:
+- `id` (required, = filename stem), `name` (required), `description` (required)
+- `tags`: inline list `[a, b]`
+- `model_class`: `reasoning` (default) | `extraction`
+- `inputs`: block list `- <name>: <type> (required) — <description>` (type defaults string)
+- `output`: `<kind> — <description>`
+- `handler`: present ⇒ deterministic code, not a reasoning prompt
+- `agent`: optional A2A endpoint
+- body after closing `---` = instructions
+
+## API
+
+- `parseSkill(idHint, raw): SkillDescriptor` — throws `SkillParseError` on malformed input (no fence / missing required key / id≠filename).
+- `isReasoningSkill(skill): boolean` — true when no `handler` (the ones worth exposing as prompts/inline tools).
+- `renderSkillPrompt(skill, args): string` — instructions + supplied non-empty inputs, as the body a host model executes.
+- Types: `SkillDescriptor`, `SkillInput` (`{name,type,required,description}`), `SkillInputType`, `SkillModelClass` (`'reasoning'|'extraction'`).
+
+## Consumers
+
+The aigency web app (compiles recipes to chat tools) and `@verevoir/mcp` (exposes
+reasoning recipes as MCP prompts) parse with this one library — one format, many
+surfaces.
+
+## Notes
+
+- ESM only, Node >= 20. Apache-2.0.
+- Function/type names keep the `Skill*` prefix (AOA origin); the package is
+  `recipes` to avoid colliding with the host *capability* concept.
