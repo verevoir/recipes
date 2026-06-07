@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { parseSkill, isReasoningSkill, renderSkillPrompt, SkillParseError } from '../src/index.js';
+import {
+  parseSkill,
+  isReasoningSkill,
+  renderSkillPrompt,
+  SkillParseError,
+  parseCapability,
+  CapabilityParseError,
+} from '../src/index.js';
 
 const FULL = `---
 id: evaluate_cv
@@ -85,5 +92,65 @@ describe('renderSkillPrompt', () => {
 
   it('returns the bare instructions when no inputs are supplied', () => {
     expect(renderSkillPrompt(s, {})).toBe(s.instructions);
+  });
+});
+
+describe('parseCapability — unified descriptor', () => {
+  it('parses a native conversation-tool capability with typed inputs', () => {
+    const md = `---
+type: add-infrastructure
+name: Add infrastructure
+description: Add one infra concept.
+execution: native
+gate: none
+inputs:
+  - repoName: string (required) — the repo
+  - params: string — optional settings
+postcondition: you will have it
+---
+guidance body`;
+    const cap = parseCapability('add-infrastructure', md);
+    expect(cap.execution).toBe('native');
+    expect(cap.name).toBe('Add infrastructure');
+    expect(cap.description).toContain('Add one infra concept');
+    expect(cap.inputs).toHaveLength(2);
+    expect(cap.inputs[0]).toEqual({
+      name: 'repoName',
+      type: 'string',
+      required: true,
+      description: 'the repo',
+    });
+    expect(cap.inputs[1].required).toBe(false);
+    expect(cap.guidance).toBe('guidance body');
+  });
+
+  it('is backward-compatible: a legacy objective-tree descriptor has no inputs and undefined execution', () => {
+    const md = `---
+type: connect-existing-repos
+postcondition: you will have each attached repo reviewed
+composes: [update-project-documentation, review-repo]
+---`;
+    const cap = parseCapability('connect-existing-repos', md);
+    expect(cap.inputs).toEqual([]);
+    expect(cap.execution).toBeUndefined();
+    expect(cap.name).toBeUndefined();
+    expect(cap.composes).toEqual(['update-project-documentation', 'review-repo']);
+  });
+
+  it('treats an unknown execution value as undefined', () => {
+    const md = `---
+type: x
+postcondition: you will have x
+execution: wibble
+---`;
+    expect(parseCapability('x', md).execution).toBeUndefined();
+  });
+
+  it('still enforces type matching the filename and the required fields', () => {
+    const md = `---
+type: a
+postcondition: you will have a
+---`;
+    expect(() => parseCapability('b', md)).toThrow(CapabilityParseError);
   });
 });
