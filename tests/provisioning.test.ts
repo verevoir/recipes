@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { parseConcernTags, findPractices, CONCERN_MENU } from '../src/index.js';
+import { parseConcernTags, findPractices, CONCERN_MENU } from '../src/engine.js';
 
 describe('parseConcernTags', () => {
   it('parses a single hyphenated id from model output', () => {

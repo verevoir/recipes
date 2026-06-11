@@ -1,6 +1,6 @@
 {
   "name": "@verevoir/recipes",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Recipe-descriptor format + zero-dependency parser: a flat-frontmatter .md describes a parameterised procedure (typed inputs → instructions → result) that a host compiles to a chat-time tool or an MCP prompt.",
   "license": "Apache-2.0",
   "type": "module",
@@ -10,6 +10,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./engine": {
+      "types": "./dist/engine.d.ts",
+      "import": "./dist/engine.js"
     }
   },
   "files": [
