@@ -469,10 +469,3 @@ export function renderSkillPrompt(
 
   return `${skill.instructions}\n\n---\n\n## Inputs\n\n${inputBlock}`;
 }
-
-// ---------------------------------------------------------------------------
-// Capability / practice engine — front-half (retrieval, planning, provisioning)
-// ---------------------------------------------------------------------------
-export * from './retrieval.js';
-export * from './provisioning.js';
-export * from './plan.js';

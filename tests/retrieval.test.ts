@@ -5,7 +5,7 @@ import {
   clearCapabilityIndexCache,
   addressingText,
   type Embedder,
-} from '../src/index.js';
+} from '../src/engine.js';
 import type { CapabilityDescriptor } from '../src/index.js';
 
 function cap(type: string, over: Partial<CapabilityDescriptor> = {}): CapabilityDescriptor {

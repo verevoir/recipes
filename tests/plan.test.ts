@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { buildPlanGraph, planExecution, FOUNDATIONAL } from '../src/index.js';
+import { buildPlanGraph, planExecution, FOUNDATIONAL } from '../src/engine.js';
 import type { CapabilityDescriptor } from '../src/index.js';
-import type { RetrievedCapability } from '../src/index.js';
+import type { RetrievedCapability } from '../src/engine.js';
 
 function cap(type: string, over: Partial<CapabilityDescriptor> = {}): CapabilityDescriptor {
   return {
