@@ -34,9 +34,9 @@
 
 import { chat } from '@verevoir/llm/anthropic';
 import type { ModelClass } from '@verevoir/llm';
-import type { CapabilityDescriptor } from './index';
-import type { RetrievedCapability } from './retrieval';
-import { selectConcernTags, provisionPractices, declaredConcernsOf } from './provisioning';
+import type { CapabilityDescriptor } from './index.js';
+import type { RetrievedCapability } from './retrieval.js';
+import { selectConcernTags, provisionPractices, declaredConcernsOf } from './provisioning.js';
 
 /** One capability in the plan, with the practices that govern it and the
  * in-plan capabilities it depends on (its resolvable `composes` edges). */
