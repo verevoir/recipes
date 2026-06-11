@@ -473,6 +473,6 @@ export function renderSkillPrompt(
 // ---------------------------------------------------------------------------
 // Capability / practice engine — front-half (retrieval, planning, provisioning)
 // ---------------------------------------------------------------------------
-export * from './retrieval';
-export * from './provisioning';
-export * from './plan';
+export * from './retrieval.js';
+export * from './provisioning.js';
+export * from './plan.js';

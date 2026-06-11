@@ -31,7 +31,7 @@
 
 import { chat } from '@verevoir/llm/anthropic';
 import type { ModelClass } from '@verevoir/llm';
-import type { CapabilityDescriptor } from './index';
+import type { CapabilityDescriptor } from './index.js';
 
 /** One concern the reasoning model classifies the work against: an id plus the
  * one-line "is this your area?" descriptor. The model sees ONLY this menu — no

@@ -17,7 +17,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { CapabilityDescriptor } from './index';
+import type { CapabilityDescriptor } from './index.js';
 
 const CACHE_DIR = join(process.cwd(), '.cache');
 
