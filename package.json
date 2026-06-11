@@ -1,6 +1,6 @@
 {
   "name": "@verevoir/recipes",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Recipe-descriptor format + zero-dependency parser: a flat-frontmatter .md describes a parameterised procedure (typed inputs → instructions → result) that a host compiles to a chat-time tool or an MCP prompt.",
   "license": "Apache-2.0",
   "type": "module",
@@ -28,6 +28,7 @@
     "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.95.2",
     "@types/node": "^25.8.0",
     "prettier": "^3",
     "typescript": "^5",
@@ -42,5 +43,16 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "@verevoir/llm": "^0.9.0"
+  },
+  "peerDependencies": {
+    "@anthropic-ai/sdk": "*"
+  },
+  "peerDependenciesMeta": {
+    "@anthropic-ai/sdk": {
+      "optional": true
+    }
   }
 }

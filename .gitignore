@@ -1,2 +1,5 @@
 node_modules
 dist
+
+# Embedding cache (re-derivable, cold-start disk cache)
+.cache/
