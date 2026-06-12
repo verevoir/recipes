@@ -78,3 +78,10 @@ fence, missing required field, or an `id` that doesn't match the filename).
 The function/type names keep the `Skill*` prefix (the descriptors originated as
 Agent-Oriented-Architecture "skills"); the package is named **recipes** to avoid
 collision with the host's _capability_ concept and with model-provider "Skills".
+
+## Docs
+
+- [Model matrix smoke test](docs/model-matrix-smoke.md) — a periodic, low-cost
+  check that the capability/practice mechanism is hooked and behaves consistently
+  across providers (Anthropic / Google / Mistral / SambaNova). A smoke test of
+  the mechanism, not a model benchmark.
