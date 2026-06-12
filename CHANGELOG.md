@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0 — 2026-06-12
+
+**`@verevoir/llm` is now an optional `peerDependency`** (was a direct dependency) (STDIO-343). As a direct dependency it let npm install a **nested** `@verevoir/llm` under recipes when a consumer pinned a different range — two module instances, two model catalogues, and the host's module mocks missing recipes' copy (the cause of a red deploy). As a peer, the consumer's single `@verevoir/llm` is used.
+
+- Only the `/engine` subpath (provisioning / retrieval / plan) needs `@verevoir/llm`; the main entry (the skill / capability parsers) doesn't — so the peer is **optional**. `@anthropic-ai/sdk` stays an optional peer.
+- Added to recipes' own `devDependencies` so its tests + build still resolve it.
+- Consumers (`aigency-web`, `@verevoir/mcp`) already depend on `@verevoir/llm` directly, so there's nothing for them to change.
+
 ## 0.4.0 — 2026-06-12
 
 **Reasoning call de-pinned from Anthropic** (STDIO-340). Practice provisioning's concern-tagging no longer hardcodes the Anthropic adapter — the model call is injectable, so it can run on DeepSeek / Mistral / any `@verevoir/llm` provider without recipes importing every SDK.
