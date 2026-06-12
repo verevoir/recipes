@@ -1,6 +1,19 @@
 // @vitest-environment node
-import { describe, it, expect } from 'vitest';
-import { parseConcernTags, findPractices, CONCERN_MENU } from '../src/engine.js';
+import { describe, it, expect, vi } from 'vitest';
+import {
+  parseConcernTags,
+  findPractices,
+  CONCERN_MENU,
+  selectConcernTags,
+  provisionPractices,
+  FOUNDATIONAL,
+} from '../src/engine.js';
+
+/** A fake chat that returns canned model output — proves the reasoning call is
+ * the INJECTED one, not the hardcoded Anthropic adapter (no network, no SDK). */
+function fakeChat(reply: string) {
+  return vi.fn(async () => ({ content: reply, usage: {} as never, stopReason: 'end_turn' }));
+}
 
 describe('parseConcernTags', () => {
   it('parses a single hyphenated id from model output', () => {
@@ -60,5 +73,42 @@ describe('findPractices', () => {
 
   it('returns an empty array for no tags', () => {
     expect(findPractices([])).toEqual([]);
+  });
+});
+
+describe('selectConcernTags — provider-agnostic via injected chat (STDIO-340)', () => {
+  it('classifies through the injected chat, not the Anthropic adapter', async () => {
+    const chat = fakeChat('- security\n- testing');
+    const tags = await selectConcernTags('handle a secret token', 'key', 'reasoning', chat);
+    expect(chat).toHaveBeenCalledOnce();
+    expect(tags).toContain('security');
+    expect(tags).toContain('testing');
+  });
+});
+
+describe('provisionPractices — injected chat', () => {
+  it('threads the injected chat through tagging and unions concern practices with the floor', async () => {
+    const chat = fakeChat('- security');
+    const practices = await provisionPractices(
+      { prose: 'store a secret' },
+      'key',
+      'reasoning',
+      chat
+    );
+    expect(chat).toHaveBeenCalledOnce();
+    for (const f of FOUNDATIONAL) expect(practices).toContain(f);
+    expect(practices).toContain('secret-handling');
+  });
+
+  it('skips the model call entirely when declaredTags are supplied', async () => {
+    const chat = fakeChat('should not be called');
+    const practices = await provisionPractices(
+      { prose: 'x', declaredTags: ['security'] },
+      null,
+      'reasoning',
+      chat
+    );
+    expect(chat).not.toHaveBeenCalled();
+    expect(practices).toContain('secret-handling');
   });
 });
