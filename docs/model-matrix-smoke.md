@@ -71,28 +71,30 @@ web product = prd):
 
 | provider       | model         | shape | practices | tool calls | responded | cost (USD) |
 | -------------- | ------------- | ----- | --------- | ---------- | --------- | ---------- |
-| anthropic      | Haiku         | story | 26        | 2          | ✓         | 0.0041     |
+| anthropic      | Haiku         | story | 26        | 2          | ✓         | 0.0043     |
 | mistral        | Mistral Small | story | 24        | 2          | ✓         | 0.0004     |
 | samba/llama    | Llama-3.3-70B | story | 28        | 2          | ✓         | 0.0016     |
 | samba/deepseek | DeepSeek-V3.2 | story | 24        | 2          | ✓         | 0.0020     |
-| gemini         | Gemini Flash  | story | 31        | —          | ✓         | 0.0000     |
-| anthropic      | Haiku         | prd   | 46        | 2          | ✓         | 0.0052     |
-| mistral        | Mistral Small | prd   | 46        | 2          | ✓         | 0.0004     |
+| gemini         | Gemini Flash  | story | 39        | 2          | ✓         | 0.0000     |
+| anthropic      | Haiku         | prd   | 46        | 2          | ✓         | 0.0050     |
+| mistral        | Mistral Small | prd   | 46        | 2          | ✓         | 0.0005     |
 | samba/llama    | Llama-3.3-70B | prd   | 40        | 2          | ✓         | 0.0017     |
 | samba/deepseek | DeepSeek-V3.2 | prd   | 44        | 2          | ✓         | 0.0023     |
-| gemini         | Gemini Flash  | prd   | 42        | —          | ✓         | 0.0000     |
+| gemini         | Gemini Flash  | prd   | 42        | 2          | ✓         | 0.0000     |
 
-**10/10 cells provisioned practices and responded. Total spend ≈ $0.018.**
+**10/10 cells provisioned practices and responded; the tool loop fired on all
+five providers. Total spend ≈ $0.018.**
 
 What it shows:
 
 - **The mechanism is hooked on every provider** — provisioning fired and a
   response came back in all ten cells.
-- **Tool-driven enactment works on all four tool-capable providers** — the loop
-  ran and the model invoked both tools.
+- **Tool-driven enactment works on all five providers** — the loop ran and the
+  model invoked both tools in every cell (Anthropic, Gemini, Mistral, and both
+  SambaNova-hosted models).
 - **Behaviour is consistent, with the expected shape signal:** prd-shaped
   provisions _more_ practices than story-shaped in **every** provider (story
-  24–31, prd 40–46). The breadth/surgical distinction is a property of the
+  24–39, prd 40–46). The breadth/surgical distinction is a property of the
   mechanism, not of any one provider.
 
 ## Scope and honest limits
@@ -104,10 +106,11 @@ So that this stands scrutiny, here is exactly what it does and does **not** clai
   **over-includes** (high recall, low precision) — which is _expected_ and is
   itself ADR 012's tiering thesis ("the floor model is a breadth machine").
   Precision is a reasoning-tier concern and is measured elsewhere.
-- **Gemini runs `chat`-only.** The OpenAI-compatible providers and Anthropic have
-  tool calling; Gemini's function-calling support is a follow-up, so its cells
-  are flagged `tools pending` rather than counted as tool-using. We do not claim
-  Gemini drove the tool loop.
+- **Cost shows `0` for Gemini.** All five providers are tool-capable (Gemini's
+  function calling landed in `@verevoir/llm@0.13.0`); the `0.0000` cost is a
+  cosmetic gap, not a missing call — the Google adapter registers labels but not
+  yet a priced model **catalogue**, so `estimateCostUSD` has no rate for it. The
+  tool loop genuinely ran (2 calls per cell); only the dollar figure is absent.
 - The **full enactment path** (`enactInline`, with the live tool set, repo tools,
   skills) is exercised on Anthropic by the app's own tests. This matrix tests the
   _portable mechanism_ (provisioning + a tool loop with the frame), not that full
