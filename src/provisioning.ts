@@ -29,9 +29,15 @@
 // logic. Do not let this table drift into a second source of truth.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { chat } from '@verevoir/llm/anthropic';
-import type { ModelClass } from '@verevoir/llm';
+import { chat as anthropicChat } from '@verevoir/llm/anthropic';
+import type { ChatOptions, ChatReply, ModelClass } from '@verevoir/llm';
 import type { CapabilityDescriptor } from './index.js';
+
+/** The model-call surface the reasoning steps use. Defaults to the Anthropic
+ * adapter, but any provider's `chat` (from `@verevoir/llm`) can be injected so
+ * concern-tagging runs on DeepSeek / Mistral / etc. without recipes importing
+ * every provider SDK (STDIO-340). */
+export type ChatFn = (opts: ChatOptions) => Promise<ChatReply>;
 
 /** One concern the reasoning model classifies the work against: an id plus the
  * one-line "is this your area?" descriptor. The model sees ONLY this menu — no
@@ -250,7 +256,8 @@ export function findPractices(tags: string[]): string[] {
 export async function selectConcernTags(
   prose: string,
   apiKey: string | null,
-  modelClass: ModelClass = 'reasoning'
+  modelClass: ModelClass = 'reasoning',
+  chat: ChatFn = anthropicChat
 ): Promise<string[]> {
   const res = await chat({
     systemPrompt: TAG_SYSTEM_PROMPT,
@@ -290,9 +297,11 @@ export interface ProvisionInput {
 export async function provisionPractices(
   input: ProvisionInput,
   apiKey: string | null,
-  modelClass: ModelClass = 'reasoning'
+  modelClass: ModelClass = 'reasoning',
+  chat: ChatFn = anthropicChat
 ): Promise<string[]> {
-  const tags = input.declaredTags ?? (await selectConcernTags(input.prose, apiKey, modelClass));
+  const tags =
+    input.declaredTags ?? (await selectConcernTags(input.prose, apiKey, modelClass, chat));
   const set = new Set<string>(FOUNDATIONAL);
   for (const pid of findPractices(tags)) set.add(pid);
   return [...set];
