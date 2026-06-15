@@ -4,6 +4,7 @@ import {
   buildCapabilityIndex,
   clearCapabilityIndexCache,
   addressingText,
+  retrieveCapabilities,
   type Embedder,
 } from '../src/engine.js';
 import type { CapabilityDescriptor } from '../src/index.js';
@@ -94,5 +95,36 @@ describe('capability-retrieval ranking (stub embedder)', () => {
       guidance: 'First **para** of guidance.\n\nSecond para is dropped.',
     });
     expect(addressingText(withBody)).toBe('you will have Y First para of guidance.');
+  });
+});
+
+describe('retrieveCapabilities (surface matches)', () => {
+  beforeEach(() => {
+    clearCapabilityIndexCache();
+  });
+
+  it('surfaces the top-k matches as { type, summary }, ranked, summary from the description', async () => {
+    const corpus = [
+      cap('deploy-thing', { description: 'Deploy the service' }),
+      cap('test-thing', { description: 'Run the tests' }),
+    ];
+    const query = 'ship to production';
+    const embedder = stubEmbedder({
+      'Deploy the service': [1, 0],
+      'Run the tests': [0, 1],
+      [query]: [1, 0],
+    });
+
+    const out = await retrieveCapabilities(query, corpus, embedder, 2);
+
+    expect(out).toEqual([
+      { type: 'deploy-thing', summary: 'Deploy the service' },
+      { type: 'test-thing', summary: 'Run the tests' },
+    ]);
+  });
+
+  it('returns [] for an empty corpus', async () => {
+    const embedder = stubEmbedder({});
+    expect(await retrieveCapabilities('anything', [], embedder)).toEqual([]);
   });
 });
