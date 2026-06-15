@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.0 — 2026-06-15
+
+- **`retrieveCapabilities` — host-agnostic capability prose-matching** (STDIO-328). Matches a piece of work (prose) against a capability corpus and surfaces the top-`k` as `{ type, summary }`, built on the existing `buildCapabilityIndex`. The caller loads the corpus (source-specific) and injects the `Embedder`, so the MCP **and** the website can drive the _same_ matcher rather than each owning a copy — capability matching no longer has to live inside the MCP, which locked the website out. `SurfacedCapability` is exported alongside. Pure orchestration over the existing retrieval primitive; no source-reading, no bundled embedder.
+
 ## 0.5.0 — 2026-06-12
 
 **`@verevoir/llm` is now an optional `peerDependency`** (was a direct dependency) (STDIO-343). As a direct dependency it let npm install a **nested** `@verevoir/llm` under recipes when a consumer pinned a different range — two module instances, two model catalogues, and the host's module mocks missing recipes' copy (the cause of a red deploy). As a peer, the consumer's single `@verevoir/llm` is used.

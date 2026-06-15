@@ -242,3 +242,31 @@ export async function buildCapabilityIndex(
 export function clearCapabilityIndexCache(): void {
   memo.clear();
 }
+
+/** A capability surfaced as an advisory match: its `type` and a one-line summary
+ * (the descriptor's description, or its postcondition as a fallback). */
+export interface SurfacedCapability {
+  type: string;
+  summary: string;
+}
+
+/** Match a piece of work (prose) against a capability corpus and surface the
+ * top-`k` as `{ type, summary }`. Host-agnostic by design (STDIO-328): the caller
+ * loads the corpus (source-specific) and injects the embedder, so the MCP and the
+ * website drive the *same* matcher rather than each owning a copy. Returns `[]`
+ * for an empty corpus. */
+export async function retrieveCapabilities(
+  prose: string,
+  corpus: CapabilityDescriptor[],
+  embedder: Embedder,
+  k: number = DEFAULT_K
+): Promise<SurfacedCapability[]> {
+  if (corpus.length === 0) return [];
+  const byType = new Map(corpus.map((c) => [c.type, c]));
+  const index = await buildCapabilityIndex(corpus, embedder);
+  const hits = await index.retrieve(prose, k);
+  return hits.map((h) => {
+    const c = byType.get(h.type);
+    return { type: h.type, summary: c?.description ?? c?.postcondition ?? '' };
+  });
+}
