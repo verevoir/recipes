@@ -32,11 +32,16 @@
 //     capability's DECLARED concern tags when the corpus carries them (dormant
 //     until the corpus is tagged), else the request-level classification.
 
-import { chat } from '@verevoir/llm/anthropic';
+import { chat as anthropicChat } from '@verevoir/llm/anthropic';
 import type { ModelClass } from '@verevoir/llm';
 import type { CapabilityDescriptor } from './index.js';
 import type { RetrievedCapability } from './retrieval.js';
-import { selectConcernTags, provisionPractices, declaredConcernsOf } from './provisioning.js';
+import {
+  selectConcernTags,
+  provisionPractices,
+  declaredConcernsOf,
+  type ChatFn,
+} from './provisioning.js';
 
 /** One capability in the plan, with the practices that govern it and the
  * in-plan capabilities it depends on (its resolvable `composes` edges). */
@@ -193,7 +198,8 @@ export async function selectEntryCapabilities(
   candidates: RetrievedCapability[],
   corpus: CapabilityDescriptor[],
   apiKey: string | null,
-  modelClass: ModelClass = 'reasoning'
+  modelClass: ModelClass = 'reasoning',
+  chat: ChatFn = anthropicChat
 ): Promise<string[]> {
   if (candidates.length === 0) return [];
   const byType = new Map(corpus.map((c) => [c.type, c]));
@@ -245,6 +251,10 @@ export interface PlanDeps {
    * demonstrate the discrimination floor. Ignored when `selectEntry` /
    * `classifyConcerns` are injected directly. */
   coordinatorTier?: ModelClass;
+  /** The reasoning chat fn for the coordinator calls (narrow + concern-tag).
+   * Defaults to the Anthropic client; the host injects this to drive any
+   * provider. Ignored when `selectEntry` / `classifyConcerns` are injected. */
+  chat?: ChatFn;
 }
 
 /**
@@ -270,10 +280,11 @@ export async function planExecution(
   const retrieve = deps.retrieve;
   const selectEntry =
     deps.selectEntry ??
-    ((req, cands, corp) => selectEntryCapabilities(req, cands, corp, deps.apiKey, coordinatorTier));
+    ((req, cands, corp) =>
+      selectEntryCapabilities(req, cands, corp, deps.apiKey, coordinatorTier, deps.chat));
   const classifyConcerns =
     deps.classifyConcerns ??
-    ((prose: string) => selectConcernTags(prose, deps.apiKey, coordinatorTier));
+    ((prose: string) => selectConcernTags(prose, deps.apiKey, coordinatorTier, deps.chat));
 
   const byType = new Map(corpus.map((c) => [c.type, c]));
 
