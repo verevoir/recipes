@@ -15,6 +15,26 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+
+      # A change to publishable source must bump the version, or it can't be
+      # released — and a forgotten bump is easy to miss in review. Fail the PR
+      # when src/ differs from the base branch but package.json version doesn't.
+      - name: Require a version bump when source changes
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin "${{ github.base_ref }}" --depth=1
+          if git diff --quiet "origin/${{ github.base_ref }}" HEAD -- src/; then
+            echo "No src/ changes vs base — version bump not required."
+            exit 0
+          fi
+          CURRENT=$(node -p "require('./package.json').version")
+          BASE=$(git show "origin/${{ github.base_ref }}:package.json" \
+            | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version")
+          if [ "$CURRENT" = "$BASE" ]; then
+            echo "::error::src/ changed but package.json version is unchanged ($CURRENT) — bump it so the change is publishable."
+            exit 1
+          fi
+          echo "Version bumped: $BASE -> $CURRENT"
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
