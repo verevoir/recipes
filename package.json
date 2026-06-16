@@ -25,6 +25,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "check:esm-load": "node scripts/check-esm-load.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "prettier --check .",
