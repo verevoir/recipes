@@ -153,4 +153,28 @@ postcondition: you will have a
 ---`;
     expect(() => parseCapability('b', md)).toThrow(CapabilityParseError);
   });
+
+  it('parses grants as an inline list, defaulting to read-only when absent (STDIO-392)', () => {
+    const withGrants = `---
+type: change-on-a-branch
+postcondition: you will have a branch
+grants: [write]
+---`;
+    expect(parseCapability('change-on-a-branch', withGrants).grants).toEqual(['write']);
+
+    const readOnly = `---
+type: review-repo
+postcondition: you will have a review
+---`;
+    expect(parseCapability('review-repo', readOnly).grants).toEqual([]);
+  });
+
+  it('ignores an unrecognised descriptor field rather than failing (forward-compatible)', () => {
+    const md = `---
+type: x
+postcondition: you will have x
+someFutureField: whatever
+---`;
+    expect(() => parseCapability('x', md)).not.toThrow();
+  });
 });
