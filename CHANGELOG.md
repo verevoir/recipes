@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.0 — 2026-06-18
+
+- **Capability `grants` — least-permission tool declaration** (STDIO-392). `parseCapability` now reads a `grants` inline-list field into `CapabilityDescriptor.grants` — the tool permissions a capability's executor may use **beyond the read-only floor**. Empty (the default) means read-only: least permission, the safe default. The token defined today is `write` (modify working-repo files); more are added as the corpus is classified, and the executor that _honours_ grants (constraining the toolbelt) is a follow-on in the consuming app. The parser now also **deliberately ignores unrecognised descriptor fields**, so this field — and later `tier`/`portability` — never breaks an older parser (forward-compatible). The corpus data half (the field on capabilities) lands in aigency-guardrails.
+
 ## 0.6.0 — 2026-06-15
 
 - **`retrieveCapabilities` — host-agnostic capability prose-matching** (STDIO-328). Matches a piece of work (prose) against a capability corpus and surfaces the top-`k` as `{ type, summary }`, built on the existing `buildCapabilityIndex`. The caller loads the corpus (source-specific) and injects the `Embedder`, so the MCP **and** the website can drive the _same_ matcher rather than each owning a copy — capability matching no longer has to live inside the MCP, which locked the website out. `SurfacedCapability` is exported alongside. Pure orchestration over the existing retrieval primitive; no source-reading, no bundled embedder.

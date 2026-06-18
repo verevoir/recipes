@@ -250,8 +250,9 @@ export function isReasoningSkill(skill: SkillDescriptor): boolean {
 //
 // Hand-parsed, no YAML dependency — matching the skill-descriptor convention
 // above. The frontmatter is flat: `type` and `postcondition` are scalars,
-// `composes` and `nextSteps` are inline lists. The body is reserved for
-// per-capability guidance and is unused at v0.
+// `composes`, `nextSteps`, and `grants` are inline lists. Unrecognised fields
+// are deliberately ignored, so the format is forward-compatible. The body is
+// reserved for per-capability guidance and is unused at v0.
 //
 // Example descriptor:
 //
@@ -304,6 +305,10 @@ export interface CapabilityDescriptor {
   nextSteps: string[];
   /** Human-in-the-loop level for running the executor. Default `none`. */
   gate: CapabilityGate;
+  /** Tool permissions the executor may use beyond the read-only floor — least
+   * permission. Empty (the default) means read-only; a token like `write`
+   * grants exactly what's listed and nothing more (STDIO-392). */
+  grants: string[];
   /** Tool display name (when the capability compiles to a conversation tool). */
   name?: string;
   /** Tool description — what the model sees when choosing it. */
@@ -382,6 +387,7 @@ export function parseCapability(idHint: string, raw: string): CapabilityDescript
   const scalars: Record<string, string> = {};
   let composes: string[] = [];
   let nextSteps: string[] = [];
+  let grants: string[] = [];
   const inputs: CapabilityInput[] = [];
 
   for (let i = 0; i < frontmatter.length; i++) {
@@ -403,6 +409,10 @@ export function parseCapability(idHint: string, raw: string): CapabilityDescript
       nextSteps = inlineList(value);
       continue;
     }
+    if (key === 'grants') {
+      grants = inlineList(value);
+      continue;
+    }
     if (key === 'inputs') {
       // Block form: subsequent indented `- name: type (required) — desc` lines.
       for (let j = i + 1; j < frontmatter.length && /^\s+-\s/.test(frontmatter[j]); j++) {
@@ -411,6 +421,10 @@ export function parseCapability(idHint: string, raw: string): CapabilityDescript
       }
       continue;
     }
+    // Any other key is kept as a scalar (surfaced only if a field below reads
+    // it). Unrecognised descriptor fields are deliberately ignored, so a new
+    // field — `grants` now, `tier`/`portability` later — never breaks an older
+    // parser.
     scalars[key] = unquote(value.trim());
   }
 
@@ -442,6 +456,7 @@ export function parseCapability(idHint: string, raw: string): CapabilityDescript
     postcondition: scalars.postcondition,
     composes,
     nextSteps,
+    grants,
     gate,
     name: scalars.name || undefined,
     description: scalars.description || undefined,

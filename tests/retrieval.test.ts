@@ -15,6 +15,7 @@ function cap(type: string, over: Partial<CapabilityDescriptor> = {}): Capability
     postcondition: `you will have ${type}`,
     composes: [],
     nextSteps: [],
+    grants: [],
     gate: 'none',
     inputs: [],
     guidance: '',
