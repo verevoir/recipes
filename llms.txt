@@ -1,12 +1,19 @@
 # @verevoir/recipes
 
-Recipe-descriptor format + zero-dependency parser. A recipe is a flat-frontmatter
-`.md`: a parameterised procedure (typed inputs → instructions → result) a host
-compiles to a chat-time tool, an MCP prompt, or runs inline. Plumbing only — the
-recipe content lives in a project's corpus (e.g. a guardrails repo) and is loaded
-at runtime; a different corpus is a different recipe set with no code change.
+Descriptor formats + zero-dependency parsers, plus the practices/capabilities
+engine. A descriptor is a flat-frontmatter `.md`. Two kinds:
+- a **recipe** (a.k.a. skill): a parameterised procedure (typed inputs →
+  instructions → result) a host compiles to a chat-time tool, an MCP prompt, or
+  runs inline;
+- a **capability**: the data half of an outcome-shaped procedure — its
+  postcondition and its edges (composition / follow-on), with optional tool
+  inputs, gate, grants, and execution mode.
 
-## Format
+Plumbing only — the descriptor content lives in a project's corpus (e.g. a
+guardrails repo) and is loaded at runtime; a different corpus is a different set
+with no code change.
+
+## Recipe (skill) format
 
 `.md` with flat frontmatter (no YAML dep) + an instruction body:
 - `id` (required, = filename stem), `name` (required), `description` (required)
@@ -18,21 +25,62 @@ at runtime; a different corpus is a different recipe set with no code change.
 - `agent`: optional A2A endpoint
 - body after closing `---` = instructions
 
-## API
+## Capability format
+
+`.md` with flat frontmatter + an optional guidance body. Unrecognised keys are
+ignored, so the format is forward-compatible.
+- `type` (required, = filename stem), `postcondition` (required, "you will have …")
+- `composes`: inline list — capabilities whose outcomes this one builds on
+- `nextSteps`: inline list — candidate follow-on capabilities
+- `grants`: inline list — tool permissions beyond the read-only floor (least
+  permission; empty = read-only)
+- `gate`: `none` (default) | `proposes` | `assent` — human-in-the-loop level for
+  running the executor
+- `execution`: `native` | `inline` | `compose` — how it runs (absent ⇒ the
+  engine infers from `composes` / executors)
+- `name`, `description`: tool display name + the description the model sees when
+  the capability compiles to a conversation tool
+- `inputs`: block list (same `- <name>: <type> (required) — <description>` shape
+  as a recipe), present when the capability is a conversation tool
+- `output`: free-text description of what it produces
+- body after closing `---` = guidance (or, for `inline`, the prompt)
+
+## API (root — `@verevoir/recipes`)
+
+Parser only; zero runtime deps, no model adapter pulled in.
 
 - `parseSkill(idHint, raw): SkillDescriptor` — throws `SkillParseError` on malformed input (no fence / missing required key / id≠filename).
 - `isReasoningSkill(skill): boolean` — true when no `handler` (the ones worth exposing as prompts/inline tools).
 - `renderSkillPrompt(skill, args): string` — instructions + supplied non-empty inputs, as the body a host model executes.
-- Types: `SkillDescriptor`, `SkillInput` (`{name,type,required,description}`), `SkillInputType`, `SkillModelClass` (`'reasoning'|'extraction'`).
+- `parseCapability(idHint, raw): CapabilityDescriptor` — throws `CapabilityParseError` on malformed input (no fence / missing required key / type≠filename).
+- Recipe types: `SkillDescriptor`, `SkillInput` (`{name,type,required,description}`), `SkillInputType`, `SkillModelClass` (`'reasoning'|'extraction'`), `SkillParseError`.
+- Capability types: `CapabilityDescriptor`, `CapabilityInput`, `CapabilityGate` (`'none'|'proposes'|'assent'`), `CapabilityExecution` (`'native'|'inline'|'compose'`), `CapabilityParseError`.
+
+`CapabilityDescriptor` shape: `type`, `postcondition`, `composes` (string[]),
+`nextSteps` (string[]), `grants` (string[]), `gate`, `execution?`, `name?`,
+`description?`, `inputs` (CapabilityInput[]), `output?`, `guidance`.
+
+## Engine (subpath — `@verevoir/recipes/engine`)
+
+Separate export so parser-only consumers never load the model adapter
+(`@verevoir/llm/anthropic`) or its `@anthropic-ai/sdk` peer. The engine over the
+parsed descriptors:
+
+- **Retrieval** — `buildCapabilityIndex`, `retrieveCapabilities(prose, corpus, embedder, k?)` (top-`k` advisory matches as `SurfacedCapability` `{type, summary}`), `cosine`, `addressingText`, `DEFAULT_K`; types `Embedder`, `CapabilityIndex`, `RetrievedCapability`, `SurfacedCapability`. The caller supplies the embedder — recipes bundles none.
+- **Provisioning** — `provisionPractices`, `selectConcernTags` (concern-tagging; takes an optional `chat: ChatFn` defaulting to Anthropic, so it runs on any `@verevoir/llm` provider), `parseConcernTags`, `findPractices`, `declaredConcernsOf`; constants `FOUNDATIONAL`, `CONCERN_MENU`, `CONCERN_PRACTICES`; types `Concern`, `ProvisionInput`, `ChatFn`.
+- **Planning** — `planExecution`, `buildPlanGraph`, `selectEntryCapabilities`, `parseSelectedIds`, `NARROW_SYSTEM_PROMPT`; types `PlanNode`, `ExecutionPlan`, `PlanDeps`.
 
 ## Consumers
 
-The aigency web app (compiles recipes to chat tools) and `@verevoir/mcp` (exposes
-reasoning recipes as MCP prompts) parse with this one library — one format, many
-surfaces.
+The aigency web app (compiles recipes to chat tools, runs the engine) and
+`@verevoir/mcp` (exposes reasoning recipes as MCP prompts; `provision` /
+capability surfacing drive the engine) parse with this one library — one
+descriptor format, many surfaces.
 
 ## Notes
 
 - ESM only, Node >= 20. Apache-2.0.
-- Function/type names keep the `Skill*` prefix (AOA origin); the package is
-  `recipes` to avoid colliding with the host *capability* concept.
+- Recipe function/type names keep the `Skill*` prefix (AOA origin); the package
+  is `recipes` to avoid colliding with the host *capability* concept.
+- `@verevoir/llm` + `@anthropic-ai/sdk` are optional peers — needed only for the
+  engine's reasoning calls, never for the root parser.
