@@ -77,6 +77,27 @@ The aigency web app (compiles recipes to chat tools, runs the engine) and
 capability surfacing drive the engine) parse with this one library — one
 descriptor format, many surfaces.
 
+## Model-matrix smoke test
+
+`docs/model-matrix-smoke.md` documents a periodic, low-cost check that the
+capability/practice mechanism is hooked and behaves consistently across the
+model spectrum (Anthropic, Google, Mistral, SambaNova's Llama + DeepSeek). It is
+a smoke test of the *mechanism*, not a model benchmark — it does not judge which
+model is better. Each cell (provider × workload-shape) confirms two
+provider-varying halves both fire: (1) `provisionPractices` runs its
+concern-tagging call on that cell's own provider (a non-empty practice set ⇒ the
+mechanism is hooked there); (2) `chatWithToolLoop` runs with the provisioned
+frame and the model calls ≥1 tool + returns a final answer (⇒ the provider can
+drive the tool loop enactment depends on). Two workload shapes are exercised:
+*story-shaped* (surgical, one concern — demands exclusion) and *prd-shaped*
+(breadth, many concerns); prd-shaped is expected to provision more practices than
+story-shaped on every provider. The runner lives in the host that has every
+provider SDK + keys (`aigency-web/scripts/matrix-smoke.ts`), makes real (small)
+API calls, is gated behind the env keys, and is never run in CI — an occasional
+regression check after touching the engine, the provider adapters, or the
+concern taxonomy. Gemini runs `chat`-only (function-calling is a follow-up), so
+its cells are flagged tools-pending rather than counted as tool-driving.
+
 ## Notes
 
 - ESM only, Node >= 20. Apache-2.0.
