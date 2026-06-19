@@ -35,10 +35,10 @@
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.95.2",
     "@types/node": "^25.8.0",
+    "@verevoir/llm": "^0.13.0",
     "prettier": "^3",
     "typescript": "^5",
-    "vitest": "^4",
-    "@verevoir/llm": "^0.13.0"
+    "vitest": "^4"
   },
   "publishConfig": {
     "access": "public"
@@ -51,8 +51,8 @@
     "node": ">=20"
   },
   "peerDependencies": {
-    "@verevoir/llm": ">=0.9.0",
-    "@anthropic-ai/sdk": "*"
+    "@anthropic-ai/sdk": "*",
+    "@verevoir/llm": ">=0.9.0"
   },
   "peerDependenciesMeta": {
     "@verevoir/llm": {
@@ -61,5 +61,8 @@
     "@anthropic-ai/sdk": {
       "optional": true
     }
+  },
+  "overrides": {
+    "vite": "^8.0.16"
   }
 }
