@@ -200,6 +200,8 @@ export const FOUNDATIONAL: string[] = [
   'input-validation',
   'failure-legibility',
   'error-tracking',
+  'comments-earn-their-keep',
+  'track-only-intended-files',
 ];
 
 /** The system prompt for the concern-tagging call — ported verbatim from
