@@ -3,3 +3,6 @@ dist
 
 # Embedding cache (re-derivable, cold-start disk cache)
 .cache/
+
+# macOS
+.DS_Store
