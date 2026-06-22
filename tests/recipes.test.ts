@@ -146,6 +146,22 @@ execution: wibble
     expect(parseCapability('x', md).execution).toBeUndefined();
   });
 
+  it('parses the verify field (the enforced postcondition) and leaves it undefined when absent', () => {
+    const withVerify = `---
+type: ingest-style-guide
+postcondition: you will have a reference library
+verify: design-pack
+---
+body`;
+    expect(parseCapability('ingest-style-guide', withVerify).verify).toBe('design-pack');
+
+    const without = `---
+type: discover-product-need
+postcondition: you will have the need
+---`;
+    expect(parseCapability('discover-product-need', without).verify).toBeUndefined();
+  });
+
   it('still enforces type matching the filename and the required fields', () => {
     const md = `---
 type: a

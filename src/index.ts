@@ -315,6 +315,13 @@ export interface CapabilityDescriptor {
   description?: string;
   /** How the capability runs. Absent for legacy objective-tree descriptors. */
   execution?: CapabilityExecution;
+  /** The deterministic verifier the execution runs as a HARD postcondition — a
+   * named check (e.g. `design-pack`) the runtime resolves and runs against what
+   * the model produced, looping the model on its findings until it passes. A
+   * prose `postcondition` is a hope; this is enforced. Absent means the
+   * capability has no mechanically-checkable postcondition (judgement-shaped
+   * output). */
+  verify?: string;
   /** Typed inputs — present when the capability is a conversation tool. */
   inputs: CapabilityInput[];
   /** What the capability produces (free text). Optional. */
@@ -463,6 +470,7 @@ export function parseCapability(idHint: string, raw: string): CapabilityDescript
     execution,
     inputs,
     output: scalars.output || undefined,
+    verify: scalars.verify || undefined,
     guidance: body,
   };
 }
