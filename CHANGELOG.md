@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.0 — 2026-06-22
+
+- **Capability `verify` — the enforced postcondition** (STDIO-451). `parseCapability` now reads a `verify` scalar into `CapabilityDescriptor.verify` — the name of a deterministic check (e.g. `design-pack`) the consuming runtime runs as a **hard** postcondition: it runs the named verifier against what the model produced and loops the model on its findings until it passes. A prose `postcondition` is a hope; `verify` is enforced — the model's output is an input to the check, never trusted as final. Absent means the capability has no mechanically-checkable postcondition (judgement-shaped output). Forward-compatible (an older parser ignores the field, like `grants`). The corpus data half (the field on capabilities) and the executor that _honours_ it land separately (aigency-guardrails + aigency-web).
+
 ## 0.7.0 — 2026-06-18
 
 - **Capability `grants` — least-permission tool declaration** (STDIO-392). `parseCapability` now reads a `grants` inline-list field into `CapabilityDescriptor.grants` — the tool permissions a capability's executor may use **beyond the read-only floor**. Empty (the default) means read-only: least permission, the safe default. The token defined today is `write` (modify working-repo files); more are added as the corpus is classified, and the executor that _honours_ grants (constraining the toolbelt) is a follow-on in the consuming app. The parser now also **deliberately ignores unrecognised descriptor fields**, so this field — and later `tier`/`portability` — never breaks an older parser (forward-compatible). The corpus data half (the field on capabilities) lands in aigency-guardrails.
