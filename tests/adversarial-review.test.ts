@@ -183,3 +183,32 @@ describe('makeAdversarialReview', () => {
     expect(seen[0].turns[0].content).toContain('No fabricated schemas.');
   });
 });
+
+describe('ADVERSARIAL_REVIEW_SYSTEM_PROMPT calibration (STDIO-461)', () => {
+  // The cross-model e2e found the original "assume the work is wrong until it
+  // proves otherwise" + "untested behaviour" framing drove most models to
+  // manufacture blocking defects on genuinely-clean code (an infinite
+  // testing-completeness regress / hallucinated concerns). These guard the
+  // recalibration so it can't silently regress back to over-rejection.
+  const p = ADVERSARIAL_REVIEW_SYSTEM_PROMPT;
+
+  it('does not tell the reviewer to assume the work is wrong (the over-rejection trigger)', () => {
+    expect(p.toLowerCase()).not.toContain('assume the work is wrong');
+  });
+
+  it('blocks only for a genuine merge-blocking defect, and approves correct contract-tested work', () => {
+    expect(p).toMatch(/Block ONLY for a defect/);
+    expect(p).toMatch(/unsure whether something is blocking, it is not/i);
+    expect(p).toMatch(/must be APPROVED/);
+  });
+
+  it('does not license a "more tests could exist" regress for out-of-contract inputs', () => {
+    expect(p).toMatch(/NOT blocking/);
+    expect(p).toMatch(/outside the contract/);
+  });
+
+  it('keeps the untrusted-data framing and the first-line APPROVE verdict contract', () => {
+    expect(p).toContain('untrusted DATA');
+    expect(p).toMatch(/single word APPROVE on its first line/);
+  });
+});
