@@ -113,6 +113,25 @@ describe('runWithVerify', () => {
     });
     expect(produceCalls).toBe(1);
   });
+
+  it('treats a non-finite cap (NaN from Number(unset)) as the default, never skipping the work', async () => {
+    let produceCalls = 0;
+    // a never-passing verifier: a NaN cap that fell through would run ZERO
+    // attempts; the default cap runs DEFAULT_MAX_VERIFY_ATTEMPTS (3).
+    const { verifier } = scriptedVerifier([{ ok: false, findings: [finding('x')] }]);
+    const out = await runWithVerify({
+      capability: 'c',
+      verify: 'v',
+      maxAttempts: Number('not-a-number'),
+      produce: async () => {
+        produceCalls += 1;
+        return 'X';
+      },
+      verifier,
+    });
+    expect(produceCalls).toBe(3);
+    expect(out.attempts).toBe(3);
+  });
 });
 
 describe('enforceConverged', () => {

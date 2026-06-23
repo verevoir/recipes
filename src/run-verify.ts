@@ -54,7 +54,12 @@ export interface RunWithVerifyResult {
  * attempt count, not an exception). Always runs `produce` at least once.
  */
 export async function runWithVerify(input: RunWithVerifyInput): Promise<RunWithVerifyResult> {
-  const max = Math.max(1, Math.floor(input.maxAttempts ?? DEFAULT_MAX_VERIFY_ATTEMPTS));
+  // Non-finite (NaN/Infinity from a `Number(unset_env)` or a bad config) falls
+  // back to the default — `??` only catches null/undefined, and a NaN cap would
+  // make the loop run zero attempts, silently skipping the work.
+  const requested = input.maxAttempts;
+  const cap = Number.isFinite(requested) ? (requested as number) : DEFAULT_MAX_VERIFY_ATTEMPTS;
+  const max = Math.max(1, Math.floor(cap));
   let findings: VerifyFinding[] = [];
   let result = '';
 
