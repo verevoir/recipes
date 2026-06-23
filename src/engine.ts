@@ -6,3 +6,4 @@ export * from './retrieval.js';
 export * from './provisioning.js';
 export * from './plan.js';
 export * from './verify.js';
+export * from './run-verify.js';
