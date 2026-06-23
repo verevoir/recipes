@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.0 — 2026-06-23
+
+- **Adversarial review — the rubric arm of the verify spectrum** (STDIO-458). `@verevoir/recipes/engine` now exports `makeAdversarialReview(opts)`, a model-injected `Verifier` that runs an antagonistic PR-style review over produced output (code, design, prose) and blocks on any defect it would reject in review — the universal "antagonist on all generation" to sit beside the `deterministic` read-back gate.
+  - **Provider-agnostic** by the engine's existing seam: the model call is an injected `ChatFn` (defaulting to the Anthropic adapter), so the review runs on DeepSeek / Mistral / a local model without recipes importing any SDK. Defaults to the `reasoning` tier (review is discrimination); takes an optional `rubric` (the bar to hold the work to) and `artefact` label.
+  - **Fail-closed against an untrusted artefact**: the reviewed output is interpolated into the prompt, so it could carry a stray `APPROVE` or markdown bullets a weak model echoes back. The artefact is fenced with a per-call nonce and marked inert, and the verdict (`parseReviewVerdict`, pure + exported) is read only from the reviewer's FIRST line — a clean pass is a sole leading `APPROVE`, never a token found anywhere in the reply — so echoed content can neither forge a pass nor manufacture findings. An empty/garbled/off-format reply blocks too, carrying the reviewer's own words so the re-produce keeps signal; a non-string adapter reply fails closed rather than throwing. Empty output blocks without spending a model call. Composes straight into `runWithVerify` like any other `Verifier`.
+
 ## 0.10.0 — 2026-06-23
 
 - **The shared verify engine — contract + runner** (STDIO-456). `@verevoir/recipes/engine` now exports the vocabulary and the loop that enforce a capability's `verify` postcondition, so aigency-web and the MCP bind one engine instead of each owning a copy.
