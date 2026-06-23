@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.0 — 2026-06-23
+
+- **The shared verify engine — contract + runner** (STDIO-456). `@verevoir/recipes/engine` now exports the vocabulary and the loop that enforce a capability's `verify` postcondition, so aigency-web and the MCP bind one engine instead of each owning a copy.
+  - **Contract**: `VerifyKind` (`deterministic | rubric | prose` — how conformance is judged), `VerifyFinding` / `VerifyResult` / `VerifyInput` / `Verifier`, and the pure helpers `isClean` (fail-closed across kinds — a rubric/prose fail carrying no structured findings still reads not-clean) and `formatFindings`.
+  - **Runner**: `runWithVerify({ capability, verify, produce, verifier, maxAttempts })` → `{ result, attempts, converged, findings }` — the produce → verify → re-produce-with-findings loop. PURE of model + IO (`produce` and `verifier` are injected), so it is provider-agnostic and unit-testable with no network. Returns the outcome truthfully (the cross-model matrix wants the attempt count, not an exception); `enforceConverged` is the one-line fail-closed gate. The binary-gate sibling of the score-based refine loop.
+
 ## 0.9.0 — 2026-06-22
 
 - **Capability `verify` — the enforced postcondition** (STDIO-451). `parseCapability` now reads a `verify` scalar into `CapabilityDescriptor.verify` — the name of a deterministic check (e.g. `design-pack`) the consuming runtime runs as a **hard** postcondition: it runs the named verifier against what the model produced and loops the model on its findings until it passes. A prose `postcondition` is a hope; `verify` is enforced — the model's output is an input to the check, never trusted as final. Absent means the capability has no mechanically-checkable postcondition (judgement-shaped output). Forward-compatible (an older parser ignores the field, like `grants`). The corpus data half (the field on capabilities) and the executor that _honours_ it land separately (aigency-guardrails + aigency-web).
