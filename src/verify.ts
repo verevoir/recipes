@@ -18,7 +18,10 @@ export interface VerifyFinding {
   message: string;
 }
 
-/** A verifier's verdict over what the producer produced; empty findings ⇒ ok. */
+/** A verifier's verdict. `ok` is the pass/fail (a rubric/prose verifier may pass
+ * or fail with no structured findings); `findings` are the actionable detail a
+ * re-produce fixes. A deterministic verifier keeps them in lock-step (`ok` ⟺ no
+ * findings); use `isClean` rather than reading either field alone. */
 export interface VerifyResult {
   ok: boolean;
   findings: VerifyFinding[];
@@ -41,9 +44,13 @@ export interface VerifyInput {
  * back or calls a judge. */
 export type Verifier = (input: VerifyInput) => Promise<VerifyResult>;
 
-/** True when a verifier found nothing to fix. */
+/** True when a run passed its verify — fail-closed across all kinds. A
+ * deterministic verifier signals pass by empty findings; a rubric/prose one
+ * signals it by `ok` and may carry no structured findings — so EITHER a falsy
+ * `ok` or any finding reads as not-clean, and a malformed `{ ok: true,
+ * findings: [...] }` stays not-clean too. */
 export function isClean(result: VerifyResult): boolean {
-  return result.findings.length === 0;
+  return result.ok && result.findings.length === 0;
 }
 
 /** Render findings as model-readable lines for a re-produce directive. */

@@ -3,13 +3,18 @@ import { describe, it, expect } from 'vitest';
 import { isClean, formatFindings, type VerifyFinding, type VerifyResult } from '../src/engine.js';
 
 describe('isClean', () => {
-  it('is true for a verdict with no findings', () => {
+  it('is true only when the run passed and found nothing', () => {
     expect(isClean({ ok: true, findings: [] })).toBe(true);
   });
 
-  it('is false when there are findings, regardless of the ok flag', () => {
+  it('is false for a rubric/prose fail that carries no structured findings', () => {
+    // ok is the verdict; a rubric verifier can fail with an empty findings list.
+    expect(isClean({ ok: false, findings: [] })).toBe(false);
+  });
+
+  it('is false when there are findings, even on a malformed ok:true verdict', () => {
     const result: VerifyResult = {
-      ok: true, // a malformed verdict — findings are the source of truth
+      ok: true,
       findings: [{ kind: 'DTCG', message: 'bad schema' }],
     };
     expect(isClean(result)).toBe(false);
