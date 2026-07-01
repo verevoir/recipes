@@ -331,6 +331,49 @@ export interface CapabilityDescriptor {
   guidance: string;
 }
 
+/**
+ * A capability joined with its executor: the DATA half (the corpus descriptor)
+ * plus the CODE half (a consumer's `run`, keyed by type). `run` is undefined for
+ * a conversation-only capability with no executor.
+ *
+ * Generic over the consumer's executor signature — aigency-web's takes its
+ * `Node`-based context, another consumer's takes its own. Recipes owns the JOIN,
+ * not the executor shape.
+ */
+export type CapabilityWithRun<Run> = CapabilityDescriptor & { run?: Run };
+
+/**
+ * Join a parsed corpus with a consumer's executor map by type: find the
+ * descriptor of `type` and attach `executors[type]` as its `run`. The join that
+ * used to live in each consumer (aigency-web's `capabilities.ts`), lifted here
+ * so aigency AND the MCP share one implementation — the MCP can't import
+ * aigency, so a shared lib is the only universal home. Returns `undefined` when
+ * no descriptor of that `type` exists in the corpus (still dispatched inline by
+ * the consumer); a descriptor with no matching executor joins with `run:
+ * undefined` (a conversation-only capability).
+ */
+export function capabilityWithRun<Run>(
+  corpus: CapabilityDescriptor[],
+  type: string,
+  executors: Record<string, Run>
+): CapabilityWithRun<Run> | undefined {
+  const data = corpus.find((c) => c.type === type);
+  if (!data) return undefined;
+  return { ...data, run: executors[type] };
+}
+
+/**
+ * Join every descriptor in a corpus with its executor (`run: undefined` where
+ * the consumer has none) — the bulk form of {@link capabilityWithRun} for a
+ * consumer that wants the whole runnable corpus at once.
+ */
+export function capabilitiesWithRun<Run>(
+  corpus: CapabilityDescriptor[],
+  executors: Record<string, Run>
+): CapabilityWithRun<Run>[] {
+  return corpus.map((c) => ({ ...c, run: executors[c.type] }));
+}
+
 const CAPABILITY_REQUIRED_KEYS = ['type', 'postcondition'] as const;
 
 // splitFrontmatter for capabilities — same logic as the skill version above
