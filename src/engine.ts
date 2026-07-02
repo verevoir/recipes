@@ -5,6 +5,7 @@
 export * from './retrieval.js';
 export * from './provisioning.js';
 export * from './plan.js';
+export * from './plan-execute.js';
 export * from './verify.js';
 export * from './run-verify.js';
 export * from './adversarial-review.js';

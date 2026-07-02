@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.0 — 2026-07-02
+
+- **Plan-first execution engine** (`plan-execute.ts`), relocated from the mcp so it's a shared engine primitive alongside `buildPlanGraph`. Pure (no SDK/network — deps injected): `executePlanParallel` (layer the DAG, run each layer concurrently, thread upstream results, isolate failures), `layerPlan`, `buildExecutionPlan`, `gatePlan`, `parseEntrySelection`, `defaultBuildDirective`, and the `NodeRun` / `PlanExecDeps` / `PlanExecResult` / `GateVerdict` / `RecordedCall` types. Exported from the engine entry. The mcp keeps the LLM-specific bits (`selectEntryTypes`, `enactNode`, the coordinator harness) and consumes these. 101 tests.
+
 ## 0.13.0 — 2026-07-01
 
 - **The capability join lives here now — `capabilityWithRun` / `capabilitiesWithRun`** (STDIO-515). Recipes already owned a capability's DATA half (`parseCapability` → `CapabilityDescriptor`); the CODE half (a consumer's `run` executor, keyed by type) was joined to it in each consumer (aigency-web's `capabilities.ts`). That join is engine logic in the wrong place — and it must be **universally available to aigency AND the MCP**, which can't import aigency, so a shared lib is the only home. Lifted here: `capabilityWithRun<Run>(corpus, type, executors)` (single lookup) and `capabilitiesWithRun<Run>(corpus, executors)` (bulk), plus the `CapabilityWithRun<Run> = CapabilityDescriptor & { run?: Run }` type. **Generic over the executor signature** — recipes owns the join, not the executor shape, so each consumer plugs in its own (`run: undefined` for a conversation-only capability with no executor; `undefined` when no descriptor of that type exists). Consumers refactor to call it and drop their local copies.
