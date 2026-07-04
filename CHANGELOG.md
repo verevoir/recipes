@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.0 — 2026-07-04
+
+- **Antagonistic review compares output to the original spec** (STDIO-530). `AdversarialReviewOptions` / `buildReviewPrompt` gain a first-class `spec` input — the directive the work was commissioned to satisfy — rendered as its own fenced block **before** the artefact and framed as inert data to check against, never instructions to the reviewer. A stated requirement left unmet, or a value that contradicts the spec, is now a blocking defect. Previously the reviewer saw only the artefact and the practices `rubric`, never what was _asked_, so "is any stated requirement unmet?" was a dead question — surfaced when the enact review assented to off-spec type-scale values on the gov.uk design-tokens run. Additive and optional: absent `spec`, behaviour is unchanged. `@verevoir/capabilities` threads `enact`'s directive into it.
+
 ## 0.14.0 — 2026-07-02
 
 - **Plan-first execution engine** (`plan-execute.ts`), relocated from the mcp so it's a shared engine primitive alongside `buildPlanGraph`. Pure (no SDK/network — deps injected): `executePlanParallel` (layer the DAG, run each layer concurrently, thread upstream results, isolate failures), `layerPlan`, `buildExecutionPlan`, `gatePlan`, `parseEntrySelection`, `defaultBuildDirective`, and the `NodeRun` / `PlanExecDeps` / `PlanExecResult` / `GateVerdict` / `RecordedCall` types. Exported from the engine entry. The mcp keeps the LLM-specific bits (`selectEntryTypes`, `enactNode`, the coordinator harness) and consumes these. 101 tests.
