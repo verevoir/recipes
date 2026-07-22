@@ -9,16 +9,6 @@ import {
   type ChatFn,
 } from '../src/engine.js';
 
-/** A chat fn that returns a fixed reply and records what it was asked. */
-function scriptedChat(reply: string): { chat: ChatFn; seen: ChatOptions[] } {
-  const seen: ChatOptions[] = [];
-  const chat: ChatFn = async (opts) => {
-    seen.push(opts);
-    return { content: reply } as ChatReply;
-  };
-  return { chat, seen };
-}
-
 // ---------------------------------------------------------------------------
 // parseReviewVerdict — pure unit tests (nonce-tagged terminal verdict contract)
 // ---------------------------------------------------------------------------
@@ -179,6 +169,22 @@ describe('parseReviewVerdict (pure) — nonce-tagged terminal verdict', () => {
     expect(out.findings[0].message).toContain('did not run to completion');
     // Raw reply snippet preserved so the re-produce keeps signal.
     expect(out.findings[0].message).toContain('not ship the migration');
+  });
+
+  it('sanitises control/ANSI characters from the reflected raw-reply snippet (no log/terminal injection)', () => {
+    const ESC = String.fromCharCode(27);
+    const NUL = String.fromCharCode(0);
+    const raw = `rogue ${ESC}[31mred${ESC}[0m and a ${NUL} null`;
+    const out = parseReviewVerdict(raw, 'VERDICT-TEST');
+    expect(out.incomplete).toBe(true);
+    const msg = out.findings[0].message;
+    const hasControl = [...msg].some((c) => {
+      const n = c.charCodeAt(0);
+      return n < 0x20 || (n >= 0x7f && n <= 0x9f);
+    });
+    expect(hasControl).toBe(false);
+    expect(msg).toContain('rogue');
+    expect(msg).toContain('red');
   });
 
   it('fails closed with incomplete=true on a huge whitespace reply — no catastrophic backtracking', () => {

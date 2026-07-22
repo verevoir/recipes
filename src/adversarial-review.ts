@@ -33,6 +33,7 @@
 //   not a producer finding. Wrong-nonce tag → fails closed. Correct-nonce APPROVE
 //   → passes. Correct-nonce REJECT → findings harvested from bullet lines.
 
+import { randomBytes } from 'node:crypto';
 import { chat as anthropicChat } from '@verevoir/llm/anthropic';
 import type { ModelClass } from '@verevoir/llm';
 import type { ChatFn } from './provisioning.js';
@@ -180,7 +181,10 @@ export function parseReviewVerdict(text: string, verdictTag: string): VerifyResu
 
   // No nonce-tagged verdict line found → incomplete (did not run to conclusion).
   if (verdictLineIdx === -1) {
-    const snippet = text.trim().slice(0, 500);
+    const snippet = text
+      .trim()
+      .slice(0, 500)
+      .replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ');
     return {
       ok: false,
       incomplete: true,
@@ -226,13 +230,13 @@ export function parseReviewVerdict(text: string, verdictTag: string): VerifyResu
 
 /** An unguessable per-call fence so the untrusted artefact can't close it. */
 function reviewFence(): string {
-  return `REVIEW-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
+  return `REVIEW-${randomBytes(6).toString('hex').toUpperCase()}`;
 }
 
 /** An unguessable per-call verdict tag so the untrusted artefact can't forge a
  * passing verdict. Distinct from the artefact fence nonce. */
 function verdictTag(): string {
-  return `VERDICT-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
+  return `VERDICT-${randomBytes(6).toString('hex').toUpperCase()}`;
 }
 
 /**
