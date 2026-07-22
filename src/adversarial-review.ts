@@ -164,10 +164,7 @@ export function parseReviewVerdict(text: string, verdictTag: string): VerifyResu
 
   // Escape the tag for use in a regex (nonces are alphanumeric-dash but be safe).
   const escapedTag = verdictTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const verdictLineRE = new RegExp(
-    `^\\s*${escapedTag}:\\s*(APPROVE|REJECT)\\s*$`,
-    'i'
-  );
+  const verdictLineRE = new RegExp(`^\\s*${escapedTag}:\\s*(APPROVE|REJECT)\\s*$`, 'i');
 
   // Find the LAST matching verdict line.
   let verdictLineIdx = -1;
@@ -190,8 +187,7 @@ export function parseReviewVerdict(text: string, verdictTag: string): VerifyResu
       findings: [
         {
           kind: 'REVIEW',
-          message:
-            `The reviewer did not emit a ${verdictTag} verdict line — the review did not run to completion (likely truncated or off-format). Failing closed. Raw reply: ${snippet || '(empty)'}`,
+          message: `The reviewer did not emit a ${verdictTag} verdict line — the review did not run to completion (likely truncated or off-format). Failing closed. Raw reply: ${snippet || '(empty)'}`,
         },
       ],
     };
@@ -224,9 +220,7 @@ export function parseReviewVerdict(text: string, verdictTag: string): VerifyResu
 
   return {
     ok: false,
-    findings: [
-      { kind: 'REVIEW', message: '(reviewer rejected without itemised findings)' },
-    ],
+    findings: [{ kind: 'REVIEW', message: '(reviewer rejected without itemised findings)' }],
   };
 }
 
