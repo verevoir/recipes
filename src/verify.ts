@@ -21,10 +21,18 @@ export interface VerifyFinding {
 /** A verifier's verdict. `ok` is the pass/fail (a rubric/prose verifier may pass
  * or fail with no structured findings); `findings` are the actionable detail a
  * re-produce fixes. A deterministic verifier keeps them in lock-step (`ok` ⟺ no
- * findings); use `isClean` rather than reading either field alone. */
+ * findings); use `isClean` rather than reading either field alone.
+ *
+ * `incomplete` is set by the adversarial reviewer when the model reply contained
+ * no nonce-tagged verdict line — meaning the review did not reach its conclusion
+ * (likely truncated or off-format). Callers can distinguish this from a genuine
+ * rejection and may choose to retry rather than feed findings back to the
+ * producer. Optional and additive — existing consumers that ignore unknown fields
+ * are unaffected. */
 export interface VerifyResult {
   ok: boolean;
   findings: VerifyFinding[];
+  incomplete?: true;
 }
 
 /** What the runtime hands a verifier. The producer's `result` is grounding for a
