@@ -148,9 +148,9 @@ const FINDING_RE = /^\s*[-*]\s+(.+?)\s*$/;
  * untrusted artefact — so an echoed APPROVE, a bulleted APPROVE, or a line with
  * the WRONG nonce tag all fail closed.
  *
- * Scanning rule: find the LAST line in the reply matching
+ * Scanning rule: find EVERY line in the reply matching
  *   `^\s*<verdictTag>:\s*(APPROVE|REJECT)\s*$`  (tag matched literally; verdict
- *   case-insensitive). Then:
+ *   case-insensitive), and require exactly one. Then:
  *   - APPROVE → `{ ok: true, findings: [] }`.
  *   - REJECT  → collect `- <area>: <message>` bullets from ALL lines above the
  *     verdict line (reusing FINDING_RE). If REJECT with no bullets, one finding
@@ -167,17 +167,43 @@ export function parseReviewVerdict(text: string, verdictTag: string): VerifyResu
   const escapedTag = verdictTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const verdictLineRE = new RegExp(`^\\s*${escapedTag}:\\s*(APPROVE|REJECT)\\s*$`, 'i');
 
-  // Find the LAST matching verdict line.
-  let verdictLineIdx = -1;
-  let verdictWord = '';
-  for (let i = lines.length - 1; i >= 0; i--) {
+  // Collect ALL tagged verdict lines, not the last one.
+  //
+  // "Last wins" was exploitable and in the one direction that matters. The reply
+  // is reviewer output ABOUT author-controlled content, so an artefact that gets
+  // the nonce echoed and appends a second `<nonce>: APPROVE` after the reviewer's
+  // genuine REJECT flipped the outcome to a forged pass — the exact injection the
+  // nonce exists to prevent. Nothing pinned it: the test that looked like it did
+  // used a PLAIN-PROSE "APPROVE" after the REJECT, which no scan rule would have
+  // matched, so it passed under "last wins" and would have passed under anything.
+  //
+  // More than one verdict is now not a verdict. It is not resolved to the safer
+  // one either: a reply carrying two contradictory verdicts is a reply that did
+  // not run to conclusion, and calling that a REJECT would report a review that
+  // never happened as a review that said no.
+  const verdictLines: { index: number; word: string }[] = [];
+  for (let i = 0; i < lines.length; i++) {
     const m = verdictLineRE.exec(lines[i]);
-    if (m) {
-      verdictLineIdx = i;
-      verdictWord = m[1].toUpperCase();
-      break;
-    }
+    if (m) verdictLines.push({ index: i, word: m[1].toUpperCase() });
   }
+
+  if (verdictLines.length > 1) {
+    return {
+      ok: false,
+      incomplete: true,
+      findings: [
+        {
+          kind: 'REVIEW',
+          message: `The reply carries ${verdictLines.length} ${verdictTag} verdict lines (${verdictLines
+            .map((v) => v.word)
+            .join(', ')}) — exactly one is required, so no verdict can be read. Failing closed. A second tagged verdict is how a reviewed artefact forges a pass.`,
+        },
+      ],
+    };
+  }
+
+  const verdictLineIdx = verdictLines.length === 1 ? verdictLines[0].index : -1;
+  const verdictWord = verdictLines.length === 1 ? verdictLines[0].word : '';
 
   // No nonce-tagged verdict line found → incomplete (did not run to conclusion).
   if (verdictLineIdx === -1) {
