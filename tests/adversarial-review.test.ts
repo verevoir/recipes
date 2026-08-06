@@ -45,8 +45,13 @@ describe('parseReviewVerdict (pure) — nonce-tagged terminal verdict', () => {
     expect(out).toEqual({ ok: true, findings: [] });
   });
 
-  it('uses the LAST tagged verdict line when there are multiple (e.g. quoted above)', () => {
-    // A model might quote the format instruction, then give the real verdict last.
+  it('ignores a QUOTED format instruction and reads the one real tagged verdict', () => {
+    // A model might quote the format instruction before giving its verdict. The
+    // quoted line is prose containing the tag, not a line matching the verdict
+    // pattern, so exactly one line still matches and the verdict is readable.
+    // (It was named "uses the LAST tagged verdict line" while the rule was
+    // last-wins — but the fixture has only ever had one matching line, so it
+    // never tested that rule either.)
     const reply = [
       'The format says to end with VERDICT-TEST: APPROVE or REJECT.',
       '- auth: token is logged to stdout',

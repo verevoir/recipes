@@ -17,7 +17,7 @@
 // the artefact is fenced with a per-call nonce and the reviewer is told to treat
 // it as inert data; and the verdict is emitted as a NONCE-TAGGED TERMINAL LINE
 // — `<verdictTag>: APPROVE` or `<verdictTag>: REJECT` — where the tag is an
-// unguessable per-call token (e.g. `VERDICT-XK3F9Z1A`). Because the tag is
+// unguessable per-call token (e.g. `VERDICT-3F9A1C7E4B02`). Because the tag is
 // minted at call time and unknown to the artefact, an echoed `APPROVE`, a
 // bulleted `- APPROVE`, or a forged tag from a DIFFERENT call all fail closed.
 // This is STRICTLY MORE injection-safe than the prior first-line contract while
@@ -82,7 +82,7 @@ You may reason through the work before reaching your verdict. The verdict format
  * fenced with `fence` and marked inert so the reviewer never reads it as
  * instructions. `fence` should be an unguessable per-call nonce so the artefact
  * cannot close the fence itself. `verdictTag` is a per-call nonce token
- * (e.g. `VERDICT-XK3F9Z1A`) that the reviewer must reproduce literally as the
+ * (e.g. `VERDICT-3F9A1C7E4B02`) that the reviewer must reproduce literally as the
  * LAST line of its reply, prefixed by the verdict: `<verdictTag>: APPROVE` or
  * `<verdictTag>: REJECT`. Because the tag is unknown to the untrusted artefact,
  * echoed content cannot forge a passing verdict. */
@@ -144,7 +144,7 @@ const FINDING_RE = /^\s*[-*]\s+(.+?)\s*$/;
 /**
  * PURE. Turn a reviewer's reply into a verdict, using a nonce-tagged terminal
  * verdict line. The `verdictTag` is a per-call unguessable token (e.g.
- * `VERDICT-XK3F9Z1A`) minted in `makeAdversarialReview` and unknown to the
+ * `VERDICT-3F9A1C7E4B02`) minted in `makeAdversarialReview` and unknown to the
  * untrusted artefact — so an echoed APPROVE, a bulleted APPROVE, or a line with
  * the WRONG nonce tag all fail closed.
  *
@@ -281,7 +281,7 @@ function verdictTag(): string {
  * outage, and the runner surfacing the real cause is more legible than burning
  * the attempt budget and misreporting it as unmet work.
  *
- * Each call mints a fresh verdict tag (e.g. `VERDICT-XK3F9Z1A`) passed to both
+ * Each call mints a fresh verdict tag (e.g. `VERDICT-3F9A1C7E4B02`) passed to both
  * `buildReviewPrompt` (so the model knows what to emit) and `parseReviewVerdict`
  * (so the parser accepts only that exact tag). An artefact that echoes any
  * APPROVE, or a VERDICT-<other-nonce>: APPROVE, still fails closed.
