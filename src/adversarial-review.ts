@@ -28,10 +28,13 @@
 //   The reviewer may reason freely in its reply, but MUST end with:
 //     <verdictTag>: APPROVE    — no blocking defect found
 //     <verdictTag>: REJECT     — blocking defect(s) found (bullets listed above)
-//   `parseReviewVerdict(text, verdictTag)` scans ALL lines and finds the LAST
-//   line matching the tag. No matching line → `incomplete: true` (retry signal),
-//   not a producer finding. Wrong-nonce tag → fails closed. Correct-nonce APPROVE
-//   → passes. Correct-nonce REJECT → findings harvested from bullet lines.
+//   `parseReviewVerdict(text, verdictTag)` scans ALL lines and requires EXACTLY
+//   ONE match. No matching line → `incomplete: true` (retry signal), not a
+//   producer finding. More than one → `incomplete: true` as well, because a
+//   second tagged verdict is how an echoed artefact forges a pass, and two
+//   verdicts mean the reply did not run to conclusion. Wrong-nonce tag → fails
+//   closed. Correct-nonce APPROVE → passes. Correct-nonce REJECT → findings
+//   harvested from bullet lines.
 
 import { randomBytes } from 'node:crypto';
 import { chat as anthropicChat } from '@verevoir/llm/anthropic';
@@ -82,10 +85,12 @@ You may reason through the work before reaching your verdict. The verdict format
  * fenced with `fence` and marked inert so the reviewer never reads it as
  * instructions. `fence` should be an unguessable per-call nonce so the artefact
  * cannot close the fence itself. `verdictTag` is a per-call nonce token
- * (e.g. `VERDICT-3F9A1C7E4B02`) that the reviewer must reproduce literally as the
- * LAST line of its reply, prefixed by the verdict: `<verdictTag>: APPROVE` or
- * `<verdictTag>: REJECT`. Because the tag is unknown to the untrusted artefact,
- * echoed content cannot forge a passing verdict. */
+ * (e.g. `VERDICT-3F9A1C7E4B02`) that the reviewer must reproduce literally on a
+ * single final line, prefixed by the verdict: `<verdictTag>: APPROVE` or
+ * `<verdictTag>: REJECT` — matching the prompt, which asks for exactly that.
+ * Because the tag is unknown to the untrusted artefact, echoed content cannot
+ * forge a passing verdict, and a SECOND tagged line is refused rather than
+ * resolved, so it cannot forge one by appending either. */
 export function buildReviewPrompt(input: {
   capability: string;
   artefact?: string;
