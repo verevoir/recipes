@@ -196,7 +196,9 @@ export function parseReviewVerdict(text: string, verdictTag: string): VerifyResu
           kind: 'REVIEW',
           message: `The reply carries ${verdictLines.length} ${verdictTag} verdict lines (${verdictLines
             .map((v) => v.word)
-            .join(', ')}) — exactly one is required, so no verdict can be read. Failing closed. A second tagged verdict is how a reviewed artefact forges a pass.`,
+            .join(
+              ', '
+            )}) — exactly one is required, so no verdict can be read. Failing closed. A second tagged verdict is how a reviewed artefact forges a pass.`,
         },
       ],
     };

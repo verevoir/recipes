@@ -149,7 +149,7 @@ describe('parseReviewVerdict (pure) — nonce-tagged terminal verdict', () => {
     // reply can be attributed to the reviewer once a second one can appear.
     const out = parseReviewVerdict(
       ['VERDICT-TEST: APPROVE', 'VERDICT-TEST: APPROVE'].join('\n'),
-      'VERDICT-TEST',
+      'VERDICT-TEST'
     );
     expect(out.ok).toBe(false);
     expect(out.incomplete).toBe(true);
