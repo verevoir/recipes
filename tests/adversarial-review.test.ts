@@ -49,9 +49,8 @@ describe('parseReviewVerdict (pure) — nonce-tagged terminal verdict', () => {
     // A model might quote the format instruction before giving its verdict. The
     // quoted line is prose containing the tag, not a line matching the verdict
     // pattern, so exactly one line still matches and the verdict is readable.
-    // (It was named "uses the LAST tagged verdict line" while the rule was
-    // last-wins — but the fixture has only ever had one matching line, so it
-    // never tested that rule either.)
+    // It carried a name describing the superseded last-wins rule, and never
+    // tested it: the fixture has only ever had one matching line.
     const reply = [
       'The format says to end with VERDICT-TEST: APPROVE or REJECT.',
       '- auth: token is logged to stdout',

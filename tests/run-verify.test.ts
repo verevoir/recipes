@@ -158,3 +158,91 @@ describe('enforceConverged', () => {
     );
   });
 });
+
+describe('runWithVerify — a verifier that produced no verdict', () => {
+  it('re-asks the VERIFIER rather than re-running produce', async () => {
+    // An incomplete verdict says nothing about the artefact, so there is nothing
+    // for the producer to fix. Re-producing would also burn a produce attempt on
+    // a mechanism failure — the expensive half of the loop, spent on nothing.
+    let produced = 0;
+    let asked = 0;
+    const outcome = await runWithVerify({
+      capability: 'c',
+      verify: 'v',
+      produce: async () => {
+        produced += 1;
+        return 'artefact';
+      },
+      verifier: async () => {
+        asked += 1;
+        return asked === 1
+          ? {
+              ok: false,
+              incomplete: true,
+              findings: [{ kind: 'REVIEW', message: 'no verdict line' }],
+            }
+          : { ok: true, findings: [] };
+      },
+    });
+
+    expect(outcome.converged).toBe(true);
+    expect(produced).toBe(1);
+    expect(asked).toBe(2);
+  });
+
+  it('never hands the mechanism error to produce as if it were a finding', async () => {
+    // The failure mode this exists to stop: the producer receives "the reviewer
+    // did not emit a verdict line" and goes looking for that defect in its own
+    // output.
+    const seen: string[] = [];
+    await runWithVerify({
+      capability: 'c',
+      verify: 'v',
+      produce: async ({ findings }) => {
+        seen.push(...findings.map((f) => f.message));
+        return 'artefact';
+      },
+      verifier: async () => ({
+        ok: false,
+        incomplete: true,
+        findings: [{ kind: 'REVIEW', message: 'the reviewer did not emit a verdict line' }],
+      }),
+    });
+
+    expect(seen).toEqual([]);
+  });
+
+  it('reports it as unverified, not as a rejection', async () => {
+    const outcome = await runWithVerify({
+      capability: 'c',
+      verify: 'v',
+      produce: async () => 'artefact',
+      verifier: async () => ({
+        ok: false,
+        incomplete: true,
+        findings: [{ kind: 'REVIEW', message: 'no verdict line' }],
+      }),
+    });
+
+    expect(outcome.converged).toBe(false);
+    expect(outcome.unverified).toBe(true);
+    // And the fail-closed message says which it was. "failed its verify" about a
+    // verify that never ran is the same lie the whole nonce fix is about.
+    expect(() => enforceConverged('c', 'v', outcome)).toThrow(/could not be verified/);
+    expect(() => enforceConverged('c', 'v', outcome)).toThrow(/NOT a rejection/);
+  });
+
+  it('still reports a genuine rejection as a rejection', async () => {
+    const outcome = await runWithVerify({
+      capability: 'c',
+      verify: 'v',
+      maxAttempts: 1,
+      produce: async () => 'artefact',
+      verifier: async () => ({ ok: false, findings: [{ kind: 'REVIEW', message: 'real defect' }] }),
+    });
+
+    expect(outcome.converged).toBe(false);
+    expect(outcome.unverified).toBeUndefined();
+    expect(() => enforceConverged('c', 'v', outcome)).toThrow(/failed its verify/);
+  });
+});

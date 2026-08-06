@@ -45,7 +45,24 @@ export interface RunWithVerifyResult {
   converged: boolean;
   /** The final attempt's findings — empty when converged. */
   findings: VerifyFinding[];
+  /**
+   * The verifier never produced a verdict — a MECHANISM failure, not a judgement
+   * on the work. Distinct from `converged: false`, which means the verifier
+   * looked and rejected. Callers that report "failed its verify" must not say
+   * that about a verify that never ran.
+   */
+  unverified?: boolean;
 }
+
+/**
+ * How many times to re-ask a verifier that returned no verdict.
+ *
+ * Re-asking is the right move and re-PRODUCING is not: an incomplete verdict
+ * says nothing about the artefact, so there is nothing for the producer to fix,
+ * and handing it the mechanism's error message ("the reviewer did not emit a
+ * verdict line") sends it chasing a defect that is not in its output.
+ */
+const MAX_VERIFIER_RETRIES = 2;
 
 /**
  * Run the produce→verify loop. Returns the outcome truthfully (converged or not)
@@ -65,11 +82,29 @@ export async function runWithVerify(input: RunWithVerifyInput): Promise<RunWithV
 
   for (let attempt = 1; attempt <= max; attempt += 1) {
     result = await input.produce({ findings, attempt });
-    const verdict = await input.verifier({
-      capability: input.capability,
-      verify: input.verify,
-      result,
-    });
+    const ask = () =>
+      input.verifier({ capability: input.capability, verify: input.verify, result });
+
+    let verdict = await ask();
+    // `incomplete` is the verifier saying it did not run to conclusion — a
+    // truncated reply, no tagged verdict line, or more than one. Re-ask it;
+    // do NOT treat its message as a finding about the work.
+    for (let retry = 0; verdict.incomplete && retry < MAX_VERIFIER_RETRIES; retry += 1) {
+      verdict = await ask();
+    }
+    if (verdict.incomplete) {
+      // Out of retries with still no verdict. Stop, and say which kind of
+      // failure this is: reporting it as a rejection would present a review that
+      // never happened as a review that said no.
+      return {
+        result,
+        attempts: attempt,
+        converged: false,
+        findings: verdict.findings,
+        unverified: true,
+      };
+    }
+
     if (isClean(verdict)) {
       return { result, attempts: attempt, converged: true, findings: [] };
     }
@@ -89,6 +124,11 @@ export function enforceConverged(
   verify: string,
   outcome: RunWithVerifyResult
 ): RunWithVerifyResult {
+  if (outcome.unverified) {
+    throw new Error(
+      `${capability} could not be verified — ${verify} never produced a verdict after ${outcome.attempts} attempt(s). This is a verifier failure, NOT a rejection of the work:\n${formatFindings(outcome.findings)}`
+    );
+  }
   if (!outcome.converged) {
     throw new Error(
       `${capability} failed its verify (${verify}) after ${outcome.attempts} attempt(s):\n${formatFindings(outcome.findings)}`
