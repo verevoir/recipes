@@ -107,9 +107,8 @@ describe('pin-staleness.sh — how far behind the pinned reviewer MCP sits', () 
     const cloneDir = await makeShallowPinnedClone(originDir, shas[0]!);
     await rm(originDir, { recursive: true, force: true });
     try {
-      await expect(run('bash', [SCRIPT, cloneDir, shas[0]!], { timeout: 30000 })).resolves.toMatchObject({
-        stdout: '?\n',
-      });
+      const result = await run('bash', [SCRIPT, cloneDir, shas[0]!], { timeout: 30000 });
+      expect(result.stdout).toBe('?\n');
     } finally {
       await rm(cloneDir, { recursive: true, force: true });
     }
