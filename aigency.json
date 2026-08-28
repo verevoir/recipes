@@ -1,0 +1,35 @@
+{
+  "commands": [
+    {
+      "name": "install",
+      "kind": "bootstrap",
+      "command": ["npm", "ci"],
+      "description": "Install dependencies exactly as locked. This repository had no aigency.json before this file — added so gates can actually run rather than reporting 'tsc: command not found' / 'vitest: command not found' / 'prettier: command not found' against an empty node_modules, which is what blocked verifying a real defect fix in this repo.",
+      "timeoutMs": 600000
+    },
+    {
+      "name": "typecheck",
+      "kind": "gate",
+      "command": ["npm", "run", "typecheck"],
+      "description": "tsc --noEmit — the repository's own declared typecheck script.",
+      "blocking": true,
+      "timeoutMs": 300000
+    },
+    {
+      "name": "test",
+      "kind": "gate",
+      "command": ["npm", "test"],
+      "description": "vitest run — the repository's own declared test script.",
+      "blocking": true,
+      "timeoutMs": 300000
+    },
+    {
+      "name": "lint",
+      "kind": "gate",
+      "command": ["npm", "run", "lint"],
+      "description": "prettier --check . — the repository's own declared lint script.",
+      "blocking": true,
+      "timeoutMs": 120000
+    }
+  ]
+}
