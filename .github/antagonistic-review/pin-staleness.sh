@@ -30,17 +30,26 @@ fail() {
 # it directly off the remote (HEAD -> refs/heads/<default>), so this works whatever the
 # default branch is actually named, not only "main". Cheap: no objects transferred.
 #
+# `timeout 60`, matching every other outbound call in this script (both `git fetch`
+# branches below) — this is the FIRST network call the script makes, and until now it
+# was the one call left unwrapped: an unresponsive remote could hang this line
+# indefinitely, defeating the "HONEST FALLBACK, DELIBERATE" contract above, which
+# promises a bounded answer of either a real count or '?', never a hang.
+#
 # `|| true` on the assignment, deliberately — NOT a blanket error-swallow. Under
 # `set -e`, a plain assignment `var="$(...)"` whose substitution fails aborts the script
 # immediately, before the `[ -n "${symref:-}" ] || fail` check below ever runs (this is
 # what produced the exit-128 crash this comment now documents: an unreachable remote or
 # unresolvable pin killed the script outright instead of ever reaching the honest '?'
-# fallback — the exact defect this script exists to prevent, reproduced in itself).
-# `|| true` only exempts THIS assignment from that abort so the explicit check on the
-# very next line can run and route the failure to `fail` on purpose. `pipefail` still
-# governs the pipe inside the substitution — a failed `git ls-remote` piped into a
-# succeeding `awk` is still reported as a failure, so this does not mask that either.
-symref="$(cd "$clone_dir" && git ls-remote --symref origin HEAD 2>/dev/null | awk '/^ref:/ {print $2; exit}')" || true
+# fallback — the exact defect this script exists to prevent, reproduced in itself). A
+# `timeout`-killed `git ls-remote` fails the exact same way (non-zero exit), so it takes
+# the same `|| true` -> explicit-check -> `fail` path rather than reintroducing the
+# abort. `|| true` only exempts THIS assignment from that abort so the explicit check on
+# the very next line can run and route the failure to `fail` on purpose. `pipefail`
+# still governs the pipe inside the substitution — a failed/timed-out `git ls-remote`
+# piped into a succeeding `awk` is still reported as a failure, so this does not mask
+# that either.
+symref="$(cd "$clone_dir" && timeout 60 git ls-remote --symref origin HEAD 2>/dev/null | awk '/^ref:/ {print $2; exit}')" || true
 [ -n "${symref:-}" ] || fail
 default_branch="${symref#refs/heads/}"
 [ "$default_branch" != "$symref" ] || fail

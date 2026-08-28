@@ -51,6 +51,19 @@ async function makeShallowPinnedClone(originDir: string, pinnedSha: string): Pro
   return dir;
 }
 
+/** A full, non-shallow clone (real `git clone`, no `--depth`) — the OTHER of the
+ * script's two deliberate fetch branches. No `.git/shallow` file exists here, so
+ * pin-staleness.sh takes its plain `git fetch origin <default-branch>` path rather
+ * than `--unshallow`. Every other fixture in this file goes through
+ * makeShallowPinnedClone, so without this one that second branch is never exercised
+ * by any test at all — untested is not the same as working. */
+async function makeNonShallowClone(originDir: string, pinnedSha: string): Promise<string> {
+  const dir = await mkdtemp(join(tmpdir(), 'pin-clone-full-'));
+  await run('git', ['clone', '--quiet', originDir, dir], { timeout: 20000 });
+  await git(dir, 'checkout', '--quiet', pinnedSha);
+  return dir;
+}
+
 async function pinStaleness(cloneDir: string, pinnedSha: string): Promise<string> {
   const { stdout } = await run('bash', [SCRIPT, cloneDir, pinnedSha], { timeout: 30000 });
   return stdout.trim();
@@ -62,6 +75,17 @@ describe('pin-staleness.sh — how far behind the pinned reviewer MCP sits', () 
     const cloneDir = await makeShallowPinnedClone(originDir, shas[0]!);
     try {
       expect(await pinStaleness(cloneDir, shas[0]!)).toBe('5');
+    } finally {
+      await rm(originDir, { recursive: true, force: true });
+      await rm(cloneDir, { recursive: true, force: true });
+    }
+  });
+
+  it('reports the real number of commits behind through the non-shallow branch (clone was never shallow)', async () => {
+    const { dir: originDir, shas } = await makeOriginRepo(4); // pin at #0, 3 commits ahead
+    const cloneDir = await makeNonShallowClone(originDir, shas[0]!);
+    try {
+      expect(await pinStaleness(cloneDir, shas[0]!)).toBe('3');
     } finally {
       await rm(originDir, { recursive: true, force: true });
       await rm(cloneDir, { recursive: true, force: true });
