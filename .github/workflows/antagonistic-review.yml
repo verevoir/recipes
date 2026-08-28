@@ -214,10 +214,27 @@ jobs:
           # be switched off within a week. What was missing was never enforcement,
           # it was VISIBILITY — the pin sat 63 commits and two weeks behind in
           # silence, withholding a fix written for the exact outage it then caused.
+          #
+          # PIN_BEHIND was, until this line, computed inline as `git rev-list
+          # --count "${CAPS_SHA}..origin/HEAD"` against THIS clone — which is a
+          # `git init` + `remote add` + depth-1 `fetch <sha>`, never `git clone`, so
+          # no remote-tracking ref is ever set up, `origin/HEAD` included. That made
+          # `origin/HEAD` unresolvable on EVERY run, falling into the trailing
+          # `|| echo '?'` unconditionally: this feature reported "unknown" on every
+          # run, not only when staleness genuinely could not be determined — and
+          # nobody noticed, because "unknown" is exactly what a plausible staleness
+          # check looks like even when it is silently broken. The same shape can
+          # recur anywhere a fallback exists: an always-taken fallback reads, from
+          # outside, identically to one that is rarely taken and doing its job.
+          # Fixed by extracting the real fetch+count into a script and proving it
+          # against a real git fixture (tests/pin-staleness.test.ts) rather than
+          # only ever exercising it inside a runner — see that script for the fix
+          # and its own honest-'?' contract (never a fabricated number, never 0
+          # standing in for "up to date").
           PIN_DATE="$( cd "$D" && git log -1 --format=%cs "$CAPS_SHA" )"
           PIN_TS="$( cd "$D" && git log -1 --format=%ct "$CAPS_SHA" )"
           PIN_AGE_DAYS=$(( ( $(date +%s) - PIN_TS ) / 86400 ))
-          PIN_BEHIND="$( cd "$D" && git rev-list --count "${CAPS_SHA}..origin/HEAD" 2>/dev/null || echo '?' )"
+          PIN_BEHIND="$(bash .github/antagonistic-review/pin-staleness.sh "$D" "$CAPS_SHA")"
           echo "reviewer pin: ${CAPS_SHA:0:12} ($PIN_DATE) — ${PIN_AGE_DAYS}d old, ${PIN_BEHIND} commits behind"
           if [ "$PIN_AGE_DAYS" -gt 30 ]; then
             echo "::warning title=Reviewer pin is ${PIN_AGE_DAYS} days old::${PIN_BEHIND} commits behind capabilities. A stale pin withholds fixes to the REVIEWER itself — see STDIO-661. Bump CAPS_SHA to the current release."
